@@ -1,16 +1,51 @@
-# This is a sample Python script.
+import discord
+from discord.ext import commands
+from config import settings
+import json
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+intents = discord.Intents.default().all()
+intents.message_content = True
+intents.typing = False
+intents.presences = False
+
+bot = commands.Bot(command_prefix=settings['prefix'], intents=intents)
+
+welcome_message = 'Hello'
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def load_message_file():
+    try:
+        with open('message.json', 'r') as message_file:
+            return json.load(message_file)
+    except FileNotFoundError:
+        return {"welcome_message": "Добро пожаловать на сервер!"}
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+def save_message_file(message):
+    with open('message.json', 'w') as message_file:
+        json.dump(message, message_file, indent=4)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+message = load_message_file()
+
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user.name}')
+
+
+@bot.event
+async def on_member_join(member):
+    channel = member.guild.system_channel
+    if channel is not None:
+        await channel.send(message["welcome_message"])
+
+
+@bot.command()
+async def change(ctx, *, new_message: str):
+    message["welcome_message"] = new_message
+    save_message_file(message)
+    await ctx.send(f'Приветственное сообщение изменено на: {new_message}')
+
+
+bot.run(settings['token'])
