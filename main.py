@@ -18,34 +18,30 @@ def load_message_file():
         with open('message.json', 'r') as message_file:
             return json.load(message_file)
     except FileNotFoundError:
-        return {"welcome_message": "Добро пожаловать на сервер!"}
-
+        return {"welcome_message": "Добро пожаловать на сервер, {user}!"}
 
 def save_message_file(message):
     with open('message.json', 'w') as message_file:
         json.dump(message, message_file, indent=4)
 
-
 message = load_message_file()
-
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
 
-
 @bot.event
 async def on_member_join(member):
     channel = member.guild.system_channel
     if channel is not None:
-        await channel.send(message["welcome_message"])
-
+        welcome_message = message["welcome_message"].format(user=member.mention)
+        await channel.send(welcome_message)
 
 @bot.command()
+@commands.has_permissions(administrator=True)
 async def change(ctx, *, new_message: str):
     message["welcome_message"] = new_message
     save_message_file(message)
     await ctx.send(f'Приветственное сообщение изменено на: {new_message}')
-
 
 bot.run(settings['token'])
